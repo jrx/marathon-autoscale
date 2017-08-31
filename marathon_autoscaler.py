@@ -315,12 +315,13 @@ class Autoscaler():
                            self.marathon_app, self.app_instances)
             app_task_dict = {}
             for i in response['app']['tasks']:
-                taskid = i['id']
-                hostid = i['host']
-                slave_id = i['slaveId']
-                self.log.debug("Task %s is running on host %s with slaveId %s"
-                               , taskid, hostid, slave_id)
-                app_task_dict[str(taskid)] = str(slave_id)
+                if i['state'] != "TASK_UNREACHABLE":
+                    taskid = i['id']
+                    hostid = i['host']
+                    slave_id = i['slaveId']
+                    self.log.debug("Task %s is running on host %s with slaveId %s"
+                                   , taskid, hostid, slave_id)
+                    app_task_dict[str(taskid)] = str(slave_id)
 
             return app_task_dict
 
