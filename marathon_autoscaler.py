@@ -107,29 +107,44 @@ class Autoscaler():
         done = False
         while not done:
 
-            if data is None:
-                response = requests.request(method, self.dcos_master + path,
-                                            headers=self.dcos_headers,
-                                            verify=False)
-            else:
-                response = requests.request(method, self.dcos_master + path,
-                                            headers=self.dcos_headers,
-                                            data=data,
-                                            verify=False)
+            try:
 
-            self.log.debug("%s %s %s", method, path, response.status_code)
-            done = True
-            if response.status_code != 200:
-                if response.status_code == 401:
-                    self.log.info("Authenticating")
-                    self.authenticate()
-                    done = False
-            else:
-                response.raise_for_status()
+                if data is None:
+                    response = requests.request(method, self.dcos_master + path,
+                                                    headers=self.dcos_headers,
+                                                    verify=False)
 
-        result = response.content
-        if not result or not result.strip():
-            result = {}
+                else:
+                    response = requests.request(method, self.dcos_master + path,
+                                                headers=self.dcos_headers,
+                                                data=data,
+                                                verify=False)
+
+                self.log.debug("%s %s %s", method, path, response.status_code)
+                done = True
+
+                result = response.content
+
+                if response.status_code != 200:
+                    if response.status_code == 401:
+                        self.log.info("Authenticating")
+                        self.authenticate()
+                        done = False
+                    else:
+                        self.log.error("Received HTTP Code: %s", response.status_code)
+                        result = '{}'
+
+                else:
+                    response.raise_for_status()
+
+                if not result or not result.strip():
+                    result = '{}'
+
+            except requests.exceptions.ConnectionError as err:
+                self.log.error(err)
+                self.log.error("Connection Error")
+                result = '{}'
+                done = True
 
         return json.loads(result)
 
